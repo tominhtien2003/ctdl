@@ -1,65 +1,82 @@
 #include<bits/stdc++.h>
-#include<ext/pb_ds/assoc_container.hpp>
-#include<ext/pb_ds/tree_policy.hpp>
-using namespace __gnu_pbds;
 using namespace std;
-typedef tree<int,null_type,std::less<int>,rb_tree_tag,tree_order_statistics_node_update>ordered_set;
 #define int long long
-const int N=4e5+1;
-int sgm[N];
-void build(int root,int l,int r,int arr[])
-{
-    if (l==r)
-    {
-        sgm[root]=arr[l];
-        return;
-    }
-    int m=(l+r)/2;
-    build(root*2+1,l,m,arr);
-    build(root*2+2,m+1,r,arr);
-    sgm[root]=max(sgm[2*root+1],sgm[2*root+2]);
-}
-void update(int root,int l,int r,int x,int y,int val)
-{
-    if (y<l || x>r || l>r) return;
-    if (l==r)
-    {
-        sgm[root]+=val;
-        return;
-    }
-    int m=(l+r)/2;
-    update(root*2+1,l,m,x,y,val);
-    update(root*2+2,m+1,r,x,y,val);
-    sgm[root]=max(sgm[2*root+1],sgm[2*root+2]);
-}
-int get(int root,int l,int r,int low,int hight)
-{
-    if (l>r || low>r || hight<l) return LONG_MIN;
-    if (l>=low && hight>=r) return sgm[root];
-    int m=(l+r)/2;
-    return max(get(root*2+1,l,m,low,hight),get(root*2+2,m+1,r,low,hight));
-}
+int arr[1001][1001];
+pair<int,int> direcs[4]={{1,0},{-1,0},{0,1},{0,-1}};
 main()
 {
     std::ios_base::sync_with_stdio(0);std::cin.tie(0);std::cout.tie(0);
-    int n;cin >> n;
-    memset(sgm,LONG_MIN,sizeof(sgm));
-    int arr[n];
-    for (int i=0;i<n;i++) cin >> arr[i];
-    build(0,0,n-1,arr);
-    int q;cin >> q;
-    while(q--)
+    auto comp=[](auto &a,auto &b){return a[0]<b[0];};
+    int test;cin >> test;
+    while (test--)
     {
-        int s;cin >> s;
-        if (s==1)
+        int n,x,y;cin >> n >> x >> y;
+        if (x==y)
         {
-            int x,y,z;cin >> x >> y >> z;
-            update(0,0,n-1,x-1,y-1,z);
+            cout << 0 << endl;
+            continue;
         }
-        else{
-            int x,y;cin >> x >> y;
-            cout << get(0,0,n-1,x-1,y-1) << endl;
+        int dist[n][n];
+        memset(dist,1e9,sizeof(dist));
+        int cnt=0;
+        int left=0,right=n-1,top=0,bottom=n-1;
+        priority_queue<vector<int>,vector<vector<int>>,decltype(comp)>PQ(comp);
+        while (left<=right && top<=bottom)
+        {
+            for (int col=left;col<right;col++) 
+            {
+                arr[top][col]=++cnt;
+                if (cnt==x) PQ.push({0,top,col});
+            }
+            for (int row=top;row<bottom;row++) 
+            {
+                arr[row][right]=++cnt;
+                if (cnt==x) PQ.push({0,row,right});
+            }
+            for (int col=right;col>left;col--) 
+            {
+                arr[bottom][col]=++cnt;
+                if (cnt==x) PQ.push({0,bottom,col});
+            }
+            for (int row=bottom;row>top;row--) 
+            {
+                arr[row][left]=++cnt;
+                if (cnt==x) PQ.push({0,row,left});
+            }
+            if (left==right && left==bottom) 
+            {
+                arr[left][left]=++cnt;
+                if (cnt==x) PQ.push({0,left,left});
+            }
+            left++;right--;bottom--;top++;
         }
+        dist[PQ.top()[1]][PQ.top()[2]]=0;
+        int res=-1,check=1;
+        while (!PQ.empty())
+        {
+            vector<int>top=PQ.top();PQ.pop();
+            if (dist[top[1]][top[2]]<top[0]) continue;
+            for (auto [x,y]:direcs)
+            {
+                int u=x+top[1],v=y+top[2];
+                if (u>=0 && v>=0 && u<n && v<n && __gcd(arr[u][v],arr[top[1]][top[2]])==1)
+                {
+                    if (arr[u][v]==y) 
+                    {
+                        res=top[0]+1;
+                        check=0;
+                        break;
+                    }
+                    if (dist[u][v]>top[0]+1)
+                    {
+                        dist[u][v]=top[0]+1;
+                        PQ.push({dist[u][v],u,v});
+                    }
+                }
+            }
+            if (check==0) break;
+        }
+        cout << res << endl;
     }
     return 0;
 }
